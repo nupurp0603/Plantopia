@@ -1,6 +1,11 @@
 # Claude Code memory (local AI context — not for version control)
 .claude/
 
+# CodeRabbit agent files
+.cr-agent*
+cr-agent.sh
+hi.md
+
 # macOS
 .DS_Store
 
