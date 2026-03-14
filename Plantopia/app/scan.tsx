@@ -7,22 +7,46 @@ import {
   ActivityIndicator,
   ScrollView,
   Alert,
+  Dimensions,
 } from 'react-native'
 import { Image } from 'expo-image'
 import { CameraView, useCameraPermissions } from 'expo-camera'
 import * as ImagePicker from 'expo-image-picker'
 import { useRouter } from 'expo-router'
 import { useQueryClient } from '@tanstack/react-query'
+import { Ionicons } from '@expo/vector-icons'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { supabase } from '@/services/supabaseClient'
 import { uploadPlantImage, savePlant } from '@/services/visionService'
 import { identifyPlant } from '@/services/aiService'
 import type { PlantIdentificationResult } from '@/types/database'
+
+const SCREEN_H = Dimensions.get('window').height
+
+// Pick a local illustration based on plant name keywords
+function pickIllustration(name: string) {
+  const n = name.toLowerCase()
+  if (n.includes('cactus') || n.includes('succulent') || n.includes('aloe')) {
+    return require('@/assets/images-new/plant-cactus.png')
+  }
+  if (n.includes('fern') || n.includes('palm') || n.includes('tropical')) {
+    return require('@/assets/images-new/plant-fern.png')
+  }
+  if (n.includes('flower') || n.includes('rose') || n.includes('orchid') || n.includes('lily')) {
+    return require('@/assets/images-new/plant-flowering.png')
+  }
+  if (n.includes('hang') || n.includes('ivy') || n.includes('pothos') || n.includes('string')) {
+    return require('@/assets/images-new/plant-hanging.png')
+  }
+  return require('@/assets/images-new/plant-leafy.png')
+}
 
 type ScanState = 'camera' | 'preview' | 'identifying' | 'result' | 'saving'
 
 export default function ScanScreen() {
   const router = useRouter()
   const queryClient = useQueryClient()
+  const insets = useSafeAreaInsets()
   const cameraRef = useRef<CameraView>(null)
   const [permission, requestPermission] = useCameraPermissions()
   const [state, setState] = useState<ScanState>('camera')
@@ -104,8 +128,14 @@ export default function ScanScreen() {
     setState('camera')
   }
 
-  // Permission not granted
-  if (!permission) return <View style={styles.container} />
+  // Permission state still loading — show a prompt so screen isn't blank
+  if (!permission) {
+    return (
+      <View style={styles.permissionContainer}>
+        <ActivityIndicator size="large" color="#2D4A2D" />
+      </View>
+    )
+  }
 
   if (!permission.granted) {
     return (
@@ -153,51 +183,92 @@ export default function ScanScreen() {
     )
   }
 
-  // Result state
+  // Result state — bottom sheet over photo
   if (state === 'result' && result) {
-    return (
-      <ScrollView style={styles.resultContainer} contentContainerStyle={styles.resultContent}>
-        <TouchableOpacity style={styles.closeBtn} onPress={() => router.back()}>
-          <Text style={styles.closeBtnText}>✕</Text>
-        </TouchableOpacity>
+    const illustration = pickIllustration(result.plant_name)
+    const sheetTop = SCREEN_H * 0.38
 
+    return (
+      <View style={styles.container}>
+        {/* Background photo */}
         {photoUri && (
-          <Image source={{ uri: photoUri }} style={styles.resultImage} contentFit="cover" />
+          <Image source={{ uri: photoUri }} style={StyleSheet.absoluteFillObject} contentFit="cover" />
         )}
 
-        <View style={styles.resultCard}>
-          <View style={styles.confidenceBadge}>
-            <Text style={styles.confidenceText}>
-              {Math.round(result.confidence * 100)}% confident
-            </Text>
-          </View>
-          <Text style={styles.resultName}>{result.plant_name}</Text>
-          <Text style={styles.resultScientific}>{result.scientific_name}</Text>
-          <Text style={styles.resultDescription}>{result.description}</Text>
+        {/* Bottom sheet */}
+        <View style={[styles.sheet, { top: sheetTop }]}>
+          {/* Drag handle */}
+          <View style={styles.sheetHandle} />
 
-          <View style={styles.careRow}>
-            <View style={styles.careTile}>
-              <Text style={styles.careTileIcon}>💧</Text>
-              <Text style={styles.careTileLabel}>Every {result.watering_frequency_days}d</Text>
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={[styles.sheetContent, { paddingBottom: insets.bottom + 24 }]}
+          >
+            {/* Header row */}
+            <View style={styles.sheetHeader}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.plantName}>{result.plant_name}</Text>
+                <Text style={styles.scientificName}>{result.scientific_name}</Text>
+              </View>
+              <TouchableOpacity style={styles.sheetCloseBtn} onPress={() => router.back()}>
+                <Ionicons name="close" size={18} color="#555" />
+              </TouchableOpacity>
             </View>
-            <View style={styles.careTile}>
-              <Text style={styles.careTileIcon}>☀️</Text>
-              <Text style={styles.careTileLabel}>{result.light_requirement.split(' ')[0]}</Text>
-            </View>
-            <View style={styles.careTile}>
-              <Text style={styles.careTileIcon}>🌱</Text>
-              <Text style={styles.careTileLabel}>{result.fertilizer_schedule.split(' ')[0]}</Text>
-            </View>
-          </View>
 
-          <TouchableOpacity style={styles.primaryBtn} onPress={confirmSave}>
-            <Text style={styles.primaryBtnText}>Add to My Garden</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.secondaryBtn} onPress={reset}>
-            <Text style={styles.secondaryBtnText}>Try Again</Text>
-          </TouchableOpacity>
+            {/* Confidence badge */}
+            <View style={styles.confBadge}>
+              <Ionicons name="checkmark-circle" size={14} color="#2D6A2D" />
+              <Text style={styles.confText}>{Math.round(result.confidence * 100)}% match</Text>
+            </View>
+
+            {/* Illustration grid */}
+            <View style={styles.illustGrid}>
+              {/* Large illustration tile */}
+              <View style={styles.illustMain}>
+                <Image source={illustration} style={styles.illustMainImg} contentFit="contain" />
+              </View>
+
+              {/* Right column — water & light info tiles */}
+              <View style={styles.illustCol}>
+                <View style={styles.illustTile}>
+                  <Ionicons name="water-outline" size={28} color="#2D6A2D" />
+                  <Text style={styles.illustTileLabel}>Every {result.watering_frequency_days}d</Text>
+                </View>
+                <View style={styles.illustTile}>
+                  <Ionicons name="sunny-outline" size={28} color="#2D6A2D" />
+                  <Text style={styles.illustTileLabel}>{result.light_requirement.split(' ').slice(0, 2).join(' ')}</Text>
+                </View>
+              </View>
+            </View>
+
+            {/* Care chips */}
+            <View style={styles.careChips}>
+              <View style={styles.careChip}>
+                <Text style={styles.careChipLabel}>Light</Text>
+                <Text style={styles.careChipValue}>{result.light_requirement.split(' ').slice(0, 2).join(' ')}</Text>
+              </View>
+              <View style={styles.careChip}>
+                <Text style={styles.careChipLabel}>Water</Text>
+                <Text style={styles.careChipValue}>Every {result.watering_frequency_days}d</Text>
+              </View>
+              <View style={styles.careChip}>
+                <Text style={styles.careChipLabel}>Care</Text>
+                <Text style={styles.careChipValue}>{result.fertilizer_schedule.split(' ')[0]}</Text>
+              </View>
+            </View>
+
+            {/* Add to garden CTA */}
+            <TouchableOpacity style={styles.addBtn} onPress={confirmSave} activeOpacity={0.88}>
+              <Text style={styles.addBtnText}>Add to My Garden</Text>
+            </TouchableOpacity>
+
+            {/* Secondary action */}
+            <TouchableOpacity onPress={reset} activeOpacity={0.7}>
+              <Text style={styles.tryAgainText}>View other results</Text>
+            </TouchableOpacity>
+          </ScrollView>
         </View>
-      </ScrollView>
+      </View>
     )
   }
 
@@ -344,43 +415,171 @@ const styles = StyleSheet.create({
     padding: 12,
   },
   errorText: { color: '#fff', fontSize: 14, textAlign: 'center' },
-  resultContainer: { flex: 1, backgroundColor: '#f9fbe7' },
-  resultContent: { paddingBottom: 40 },
-  resultImage: { width: '100%', height: 280 },
-  resultCard: { padding: 20 },
-  confidenceBadge: {
-    alignSelf: 'flex-start',
-    backgroundColor: '#e8f5e9',
-    borderRadius: 20,
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    marginBottom: 10,
-  },
-  confidenceText: { fontSize: 12, color: '#2e7d32', fontWeight: '600' },
-  resultName: { fontSize: 26, fontWeight: '800', color: '#1a1a1a', marginBottom: 4 },
-  resultScientific: { fontSize: 16, fontStyle: 'italic', color: '#666', marginBottom: 12 },
-  resultDescription: { fontSize: 15, color: '#444', lineHeight: 22, marginBottom: 20 },
-  careRow: { flexDirection: 'row', gap: 10, marginBottom: 24 },
-  careTile: {
-    flex: 1,
+
+  // ── Bottom sheet result ──────────────────────────────────────────────────
+  sheet: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
     backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 12,
-    alignItems: 'center',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    elevation: 12,
   },
-  careTileIcon: { fontSize: 24, marginBottom: 4 },
-  careTileLabel: { fontSize: 11, color: '#555', textAlign: 'center', fontWeight: '500' },
+  sheetHandle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#D8D8D0',
+    alignSelf: 'center',
+    marginTop: 10,
+    marginBottom: 2,
+  },
+  sheetContent: {
+    paddingHorizontal: 20,
+    paddingTop: 16,
+  },
+  sheetHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 6,
+  },
+  plantName: {
+    fontSize: 28,
+    fontWeight: '800',
+    color: '#111',
+    letterSpacing: -0.5,
+  },
+  scientificName: {
+    fontSize: 15,
+    fontStyle: 'italic',
+    color: '#888',
+    marginTop: 2,
+  },
+  sheetCloseBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#EFEFEB',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 12,
+    marginTop: 4,
+  },
+  confBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: '#EAF4EA',
+    alignSelf: 'flex-start',
+    borderRadius: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    marginBottom: 16,
+  },
+  confText: {
+    fontSize: 12,
+    color: '#2D6A2D',
+    fontWeight: '600',
+  },
+
+  // Illustration grid
+  illustGrid: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 14,
+  },
+  illustMain: {
+    flex: 3,
+    backgroundColor: '#F2F2EE',
+    borderRadius: 18,
+    height: 180,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  illustMainImg: {
+    width: '85%',
+    height: '85%',
+  },
+  illustCol: {
+    flex: 2,
+    gap: 10,
+  },
+  illustTile: {
+    flex: 1,
+    backgroundColor: '#F2F2EE',
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+  },
+  illustTileLabel: {
+    fontSize: 11,
+    color: '#555',
+    fontWeight: '600',
+    textAlign: 'center',
+    paddingHorizontal: 4,
+  },
+
+  // Care chips
+  careChips: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 20,
+  },
+  careChip: {
+    flex: 1,
+    backgroundColor: '#F2F2EE',
+    borderRadius: 50,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  careChipLabel: {
+    fontSize: 11,
+    color: '#999',
+    marginBottom: 2,
+  },
+  careChipValue: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#222',
+    textAlign: 'center',
+  },
+
+  // CTA
+  addBtn: {
+    backgroundColor: '#2D4A2D',
+    borderRadius: 16,
+    paddingVertical: 18,
+    alignItems: 'center',
+    marginBottom: 14,
+  },
+  addBtnText: {
+    color: '#fff',
+    fontSize: 17,
+    fontWeight: '700',
+  },
+  tryAgainText: {
+    textAlign: 'center',
+    fontSize: 14,
+    color: '#888',
+    paddingBottom: 4,
+  },
+
+  // Kept for preview state buttons
   primaryBtn: {
     backgroundColor: '#4caf50',
     borderRadius: 14,
     padding: 16,
     alignItems: 'center',
     marginBottom: 10,
+    flex: 1,
   },
   primaryBtnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
   secondaryBtn: {

@@ -25,6 +25,18 @@ export async function completeTask(task: TaskWithPlant): Promise<void> {
   const { error } = await supabase.from('tasks').update({ completed: true }).eq('id', task.id)
   if (error) throw error
 
+  // Guard: don't create a duplicate next-task if one already exists
+  const { data: existing } = await supabase
+    .from('tasks')
+    .select('id')
+    .eq('plant_id', task.plant_id)
+    .eq('task_type', task.task_type)
+    .eq('completed', false)
+    .limit(1)
+    .maybeSingle()
+
+  if (existing) return  // next task already exists, skip creation
+
   const nextDueDays = getNextDueDays(task.task_type)
   const nextDue = new Date()
   nextDue.setDate(nextDue.getDate() + nextDueDays)
@@ -94,4 +106,13 @@ export function isOverdue(dueDateStr: string): boolean {
   today.setHours(0, 0, 0, 0)
   dueDate.setHours(0, 0, 0, 0)
   return dueDate < today
+}
+
+/** True when the task is due today or overdue — i.e. the user should act now */
+export function isDue(dueDateStr: string): boolean {
+  const dueDate = new Date(dueDateStr)
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  dueDate.setHours(0, 0, 0, 0)
+  return dueDate <= today
 }

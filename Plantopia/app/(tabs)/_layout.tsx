@@ -91,6 +91,7 @@ export default function TabLayout() {
           tabBarButton: (props) => <CameraTabButton {...props} />,
         }}
       />
+      <Tabs.Screen name="garden" options={{ href: null }} />
       <Tabs.Screen
         name="reminders"
         options={{
