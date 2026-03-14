@@ -1,0 +1,9 @@
+# Claude Code memory (local AI context — not for version control)
+.claude/
+
+# macOS
+.DS_Store
+
+# Editor
+.vscode/
+.idea/
