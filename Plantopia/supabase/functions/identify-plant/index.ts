@@ -33,9 +33,14 @@ serve(async (req) => {
     const contentType = imageResponse.headers.get('content-type') ?? 'image/jpeg'
     const mediaType = contentType.startsWith('image/') ? contentType.split(';')[0] : 'image/jpeg'
 
-    const anthropic = new Anthropic({
-      apiKey: Deno.env.get('ANTHROPIC_API_KEY')!,
-    })
+    const apiKey = Deno.env.get('ANTHROPIC_API_KEY')
+    if (!apiKey) {
+      return new Response(
+        JSON.stringify({ error: 'ANTHROPIC_API_KEY is not configured' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+    const anthropic = new Anthropic({ apiKey })
 
     const response = await anthropic.messages.create({
       model: 'claude-sonnet-4-6',
@@ -74,7 +79,8 @@ serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), {
+    const message = error instanceof Error ? error.message : 'Unknown error occurred'
+    return new Response(JSON.stringify({ error: message }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })

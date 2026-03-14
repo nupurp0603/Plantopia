@@ -28,6 +28,7 @@ export default function ScanScreen() {
   const [state, setState] = useState<ScanState>('camera')
   const [photoUri, setPhotoUri] = useState<string | null>(null)
   const [result, setResult] = useState<PlantIdentificationResult | null>(null)
+  const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   async function takePicture() {
@@ -65,6 +66,7 @@ export default function ScanScreen() {
       if (!userId) throw new Error('Not signed in. Please wait and try again.')
 
       const imageUrl = await uploadPlantImage(photoUri, userId)
+      setUploadedImageUrl(imageUrl)
       const identification = await identifyPlant(imageUrl)
       setResult({ ...identification })
       setState('result')
@@ -83,7 +85,7 @@ export default function ScanScreen() {
       const session = await supabase.auth.getSession()
       const userId = session.data.session?.user.id
       if (!userId) throw new Error('Not signed in. Please wait and try again.')
-      const imageUrl = await uploadPlantImage(photoUri, userId)
+      const imageUrl = uploadedImageUrl ?? await uploadPlantImage(photoUri, userId)
       await savePlant(userId, imageUrl, result)
       queryClient.invalidateQueries({ queryKey: ['plants'] })
       queryClient.invalidateQueries({ queryKey: ['tasks'] })
@@ -97,6 +99,7 @@ export default function ScanScreen() {
   function reset() {
     setPhotoUri(null)
     setResult(null)
+    setUploadedImageUrl(null)
     setError(null)
     setState('camera')
   }

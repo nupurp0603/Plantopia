@@ -17,9 +17,15 @@ serve(async (req) => {
       )
     }
 
-    const anthropic = new Anthropic({
-      apiKey: Deno.env.get('ANTHROPIC_API_KEY')!,
-    })
+    const apiKey = Deno.env.get('ANTHROPIC_API_KEY')
+    if (!apiKey) {
+      return new Response(
+        JSON.stringify({ error: 'ANTHROPIC_API_KEY is not configured' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    const anthropic = new Anthropic({ apiKey })
 
     // Tailor tone/complexity based on onboarding profile
     const experienceMap: Record<string, string> = {
@@ -56,13 +62,20 @@ serve(async (req) => {
       ],
     })
 
-    const assistant_message = response.content[0].text
+    const textBlock = response.content.find((block) => block.type === 'text')
+    if (!textBlock || textBlock.type !== 'text') {
+      return new Response(
+        JSON.stringify({ error: 'No text response from AI' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
 
-    return new Response(JSON.stringify({ assistant_message }), {
+    return new Response(JSON.stringify({ assistant_message: textBlock.text }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), {
+    const message = error instanceof Error ? error.message : 'Unknown error occurred'
+    return new Response(JSON.stringify({ error: message }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })

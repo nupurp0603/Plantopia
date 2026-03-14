@@ -23,6 +23,7 @@ function timeAgo(dateStr: string): string {
   if (days < 1)        return `${Math.floor(diff / 3600000)}h ago`
   if (days < 7)        return `${days} day${days !== 1 ? 's' : ''} ago`
   if (weeks < 4)       return `${weeks} week${weeks !== 1 ? 's' : ''} ago`
+  if (months < 1)      return `${weeks} week${weeks !== 1 ? 's' : ''} ago`
   return `${months} month${months !== 1 ? 's' : ''} ago`
 }
 
@@ -56,7 +57,7 @@ export default function PlantDetailScreen() {
       const { data } = await supabase
         .from('tasks').select('*')
         .eq('plant_id', id).eq('task_type', 'water').eq('completed', false)
-        .order('due_date', { ascending: true }).limit(1).single()
+        .order('due_date', { ascending: true }).limit(1).maybeSingle()
       return data
     },
     enabled: !!id,
@@ -77,7 +78,7 @@ export default function PlantDetailScreen() {
   const waterMutation = useMutation({
     mutationFn: async () => {
       const { data: { session } } = await supabase.auth.getSession()
-      if (!session?.user.id || !id) return
+      if (!session?.user.id || !id) throw new Error('Not signed in')
       if (nextWaterTask) {
         await supabase.from('tasks').update({ completed: true }).eq('id', nextWaterTask.id)
       }
@@ -93,6 +94,7 @@ export default function PlantDetailScreen() {
       queryClient.invalidateQueries({ queryKey: ['plant-history', id] })
       Alert.alert('Done!', 'Plant watered.')
     },
+    onError: (error: Error) => Alert.alert('Error', error.message),
   })
 
   const fertilizeMutation = useMutation({

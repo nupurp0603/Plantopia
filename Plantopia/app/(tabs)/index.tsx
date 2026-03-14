@@ -141,8 +141,8 @@ function getPlantComponent(name: string) {
 function getPlantSize(name: string): { w: number; h: number } {
   const n = name.toLowerCase();
   if (n.includes('cactus') || n.includes('succulent')) return { w: 40, h: 58 };
-  if (n.includes('pine') || n.includes('spruce') || n.includes('fir') || n.includes('bamboo')) return { w: 48, h: 76 };
-  if (n.includes('herb') || n.includes('mint') || n.includes('basil') || n.includes('pothos') || n.includes('ivy') || n.includes('moss') || n.includes('fern')) return { w: 40, h: 52 };
+  if (n.includes('pine') || n.includes('spruce') || n.includes('fir') || n.includes('bamboo') || n.includes('fern')) return { w: 48, h: 76 };
+  if (n.includes('herb') || n.includes('mint') || n.includes('basil') || n.includes('pothos') || n.includes('ivy') || n.includes('moss')) return { w: 40, h: 52 };
   if (n.includes('rose') || n.includes('tulip') || n.includes('sunflower') || n.includes('flower') || n.includes('lily') || n.includes('orchid') || n.includes('daisy') || n.includes('lavender')) return { w: 36, h: 56 };
   return { w: 56, h: 76 }; // round tree
 }

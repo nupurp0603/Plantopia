@@ -18,22 +18,28 @@ export default function RootLayout() {
 
   useEffect(() => {
     async function bootstrap() {
-      const { data: { session } } = await supabase.auth.getSession()
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
 
-      let onboarded: boolean
+        let onboarded: boolean
 
-      if (!session) {
-        const { data } = await supabase.auth.signInAnonymously()
-        onboarded = !!data.user?.user_metadata?.onboarded
-      } else {
-        onboarded = !!session.user.user_metadata?.onboarded
-      }
+        if (!session) {
+          const { data, error } = await supabase.auth.signInAnonymously()
+          if (error) throw error
+          onboarded = !!data.user?.user_metadata?.onboarded
+        } else {
+          onboarded = !!session.user.user_metadata?.onboarded
+        }
 
-      if (!onboarded) {
+        if (!onboarded) {
+          router.replace('/onboarding')
+        }
+      } catch (error) {
+        console.error('Auth bootstrap failed:', error)
         router.replace('/onboarding')
+      } finally {
+        setReady(true)
       }
-
-      setReady(true)
     }
 
     bootstrap()

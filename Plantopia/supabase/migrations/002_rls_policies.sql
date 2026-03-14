@@ -44,6 +44,11 @@ create policy "Users can update own plant care" on public.plant_care
     exists (select 1 from public.plants where plants.id = plant_care.plant_id and plants.user_id = auth.uid())
   );
 
+create policy "Users can delete own plant care" on public.plant_care
+  for delete using (
+    exists (select 1 from public.plants where plants.id = plant_care.plant_id and plants.user_id = auth.uid())
+  );
+
 -- Tasks: users own their tasks
 create policy "Users can view own tasks" on public.tasks
   for select using (auth.uid() = user_id);
@@ -64,12 +69,16 @@ create policy "Users can view own messages" on public.chat_messages
 create policy "Users can insert own messages" on public.chat_messages
   for insert with check (auth.uid() = user_id);
 
+create policy "Users can delete own messages" on public.chat_messages
+  for delete using (auth.uid() = user_id);
+
 -- Auto-create user profile on signup
 create or replace function public.handle_new_user()
 returns trigger as $$
 begin
   insert into public.users (id, email)
-  values (new.id, new.email);
+  values (new.id, new.email)
+  on conflict (id) do nothing;
   return new;
 end;
 $$ language plpgsql security definer;

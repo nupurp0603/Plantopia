@@ -29,13 +29,18 @@ export async function completeTask(task: TaskWithPlant): Promise<void> {
   const nextDue = new Date()
   nextDue.setDate(nextDue.getDate() + nextDueDays)
 
-  await supabase.from('tasks').insert({
+  const { error: insertError } = await supabase.from('tasks').insert({
     plant_id: task.plant_id,
     user_id: task.user_id,
     task_type: task.task_type,
     due_date: nextDue.toISOString().split('T')[0],
     completed: false,
   })
+  if (insertError) {
+    // Rollback: un-complete the original task
+    await supabase.from('tasks').update({ completed: false }).eq('id', task.id)
+    throw insertError
+  }
 }
 
 function getNextDueDays(taskType: string): number {

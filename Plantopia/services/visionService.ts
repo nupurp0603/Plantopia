@@ -53,7 +53,7 @@ export async function savePlant(
 
   if (plantError) throw plantError
 
-  await supabase.from('plant_care').insert({
+  const { error: careError } = await supabase.from('plant_care').insert({
     plant_id: plant.id,
     watering_frequency_days: identification.watering_frequency_days,
     light_requirement: identification.light_requirement,
@@ -61,17 +61,19 @@ export async function savePlant(
     care_instructions: {},
     common_problems: identification.common_problems,
   })
+  if (careError) throw careError
 
   const waterDue = new Date()
   waterDue.setDate(waterDue.getDate() + identification.watering_frequency_days)
 
-  await supabase.from('tasks').insert({
+  const { error: taskError } = await supabase.from('tasks').insert({
     plant_id: plant.id,
     user_id: userId,
     task_type: 'water',
     due_date: waterDue.toISOString().split('T')[0],
     completed: false,
   })
+  if (taskError) throw taskError
 
   return plant as Plant
 }

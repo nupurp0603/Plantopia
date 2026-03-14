@@ -55,7 +55,7 @@ export default function CareGuide({ care }: { care: PlantCare }) {
 
   const skip = new Set(['soil', 'location'])
   for (const [key, val] of Object.entries(care.care_instructions ?? {})) {
-    if (!skip.has(key)) {
+    if (!skip.has(key) && typeof val === 'string') {
       rows.push({
         icon: 'clipboard-outline',
         iconColor: '#888',
