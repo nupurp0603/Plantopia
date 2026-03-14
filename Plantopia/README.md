@@ -1,50 +1,125 @@
-# Welcome to your Expo app 👋
+# Plantopia 🌿
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+An AI-powered plant care companion for iOS and Android. Scan any plant, get instant identification, and track your garden's health — all in one place.
 
-## Get started
+## Features
 
-1. Install dependencies
+- **AI Plant Identification** — point your camera at any plant for instant species ID, confidence score, and care data
+- **Garden Map** — visual 6×6 grid showing your plants with animated SVG icons
+- **Care Reminders** — auto-generated watering and fertilizing tasks with due-date tracking
+- **Health Tracking** — per-plant health rings, water/fertilizer status, and care history
+- **Garden Analytics** — health score, plant-type breakdown, and care overview stats
+- **AI Botanist** — chat assistant for plant care questions
+- **Auth** — email/password sign-up with Supabase, onboarding flow
 
-   ```bash
-   npm install
-   ```
+## Tech Stack
 
-2. Start the app
+| Layer | Technology |
+|---|---|
+| Framework | React Native + Expo (SDK 52) |
+| Routing | Expo Router (file-based) |
+| Backend | Supabase (auth, Postgres, storage) |
+| State | TanStack Query |
+| AI | Claude (plant identification, botanist chat) |
+| Graphics | react-native-svg |
+| Language | TypeScript |
 
-   ```bash
-   npx expo start
-   ```
+## Getting Started
 
-In the output, you'll find options to open the app in a
+### Prerequisites
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+- Node.js 18+
+- Expo CLI — `npm install -g expo-cli`
+- Expo Go app on your phone (for development)
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+### Install
 
 ```bash
-npm run reset-project
+npm install
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+### Environment
 
-## Learn more
+Create a `.env` file in the project root:
 
-To learn more about developing your project with Expo, look at the following resources:
+```env
+EXPO_PUBLIC_SUPABASE_URL=your_supabase_url
+EXPO_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+```
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+### Run
 
-## Join the community
+```bash
+# Start dev server
+npx expo start
 
-Join our community of developers creating universal apps.
+# Run on iOS simulator
+npx expo start --ios
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+# Run on Android emulator
+npx expo start --android
+
+# Run on physical device via tunnel
+npx expo start --tunnel
+```
+
+## Project Structure
+
+```
+app/
+├── _layout.tsx          # Root layout, auth routing
+├── landing.tsx          # Landing page
+├── auth/
+│   ├── sign-in.tsx
+│   └── sign-up.tsx
+├── onboarding.tsx
+├── scan.tsx             # Camera + AI identification
+├── plant/[id].tsx       # Plant detail
+└── (tabs)/
+    ├── index.tsx        # Library (home)
+    ├── garden.tsx       # Garden map + analytics
+    ├── reminders.tsx    # Care task list
+    ├── botanist.tsx     # AI chat
+    └── profile.tsx
+
+components/
+├── garden/
+│   ├── GardenGrid.tsx   # 6x6 soil grid
+│   └── PlantIcon.tsx    # Animated SVG plant icons
+├── ReminderItem.tsx
+└── CareGuide.tsx
+
+services/
+├── aiService.ts         # Claude API calls
+├── visionService.ts     # Image upload + plant save
+├── plantService.ts
+└── reminderService.ts
+
+hooks/
+├── usePlants.ts
+└── useTasks.ts
+
+supabase/functions/
+├── identify-plant/      # Plant identification edge function
+├── generate-care/       # Care plan generation
+└── botanist-chat/       # AI chat edge function
+```
+
+## Database Schema
+
+```
+plants          — user's saved plants
+plant_care      — care settings per plant (watering, light, fertilizer)
+tasks           — watering/fertilizing reminders
+chat_messages   — botanist conversation history
+```
+
+## Supabase Edge Functions
+
+Deploy with:
+
+```bash
+supabase functions deploy identify-plant
+supabase functions deploy generate-care
+supabase functions deploy botanist-chat
+```
