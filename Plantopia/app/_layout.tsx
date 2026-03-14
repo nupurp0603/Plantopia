@@ -1,7 +1,7 @@
 import 'react-native-reanimated';
 import { useEffect, useState } from 'react';
-import { View } from 'react-native';
-import { Stack, useRouter } from 'expo-router';
+import { View, StyleSheet } from 'react-native';
+import { Stack, useRouter, useRootNavigationState } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { supabase } from '@/services/supabaseClient';
@@ -13,55 +13,71 @@ export const unstable_settings = {
 };
 
 export default function RootLayout() {
-  const router = useRouter()
-  const [ready, setReady] = useState(false)
+  const router    = useRouter()
+  const navState  = useRootNavigationState()          // ready when key is set
+  const [onboarded, setOnboarded] = useState<boolean | null>(null)
 
+  // Step 1 — resolve auth (independent of navigation readiness)
   useEffect(() => {
     async function bootstrap() {
       try {
         const { data: { session } } = await supabase.auth.getSession()
 
-        let onboarded: boolean
-
+        let isOnboarded: boolean
         if (!session) {
           const { data, error } = await supabase.auth.signInAnonymously()
           if (error) throw error
-          onboarded = !!data.user?.user_metadata?.onboarded
+          isOnboarded = !!data.user?.user_metadata?.onboarded
         } else {
-          onboarded = !!session.user.user_metadata?.onboarded
+          isOnboarded = !!session.user.user_metadata?.onboarded
         }
 
-        if (!onboarded) {
-          router.replace('/onboarding')
-        }
+        setOnboarded(isOnboarded)
       } catch (error) {
         console.error('Auth bootstrap failed:', error)
-        router.replace('/onboarding')
-      } finally {
-        setReady(true)
+        setOnboarded(false) // redirect to onboarding on failure
       }
     }
 
     bootstrap()
-  }, [router])
+  }, [])
 
-  // Show blank beige screen while auth resolves to avoid tab flash
-  if (!ready) {
-    return <View style={{ flex: 1, backgroundColor: '#EDEAE3' }} />
-  }
+  // Step 2 — navigate only once BOTH auth is resolved AND navigation is ready
+  useEffect(() => {
+    if (!navState?.key)    return  // navigation container not mounted yet
+    if (onboarded === null) return  // auth not resolved yet
+
+    if (!onboarded) {
+      router.replace('/onboarding')
+    }
+  }, [navState?.key, onboarded, router])
 
   return (
     <QueryClientProvider client={queryClient}>
+      {/* Stack always renders so all routes are registered before any redirect */}
       <Stack>
-        <Stack.Screen name="(tabs)"      options={{ headerShown: false }} />
-        <Stack.Screen name="onboarding"  options={{ headerShown: false, gestureEnabled: false }} />
-        <Stack.Screen name="scan"        options={{ presentation: 'modal', headerShown: false }} />
+        <Stack.Screen name="(tabs)"     options={{ headerShown: false }} />
+        <Stack.Screen name="onboarding" options={{ headerShown: false, gestureEnabled: false }} />
+        <Stack.Screen name="scan"       options={{ presentation: 'modal', headerShown: false }} />
         <Stack.Screen
           name="plant/[id]"
           options={{ headerBackTitle: 'Library', title: 'Plant Detail' }}
         />
       </Stack>
+
+      {/* Overlay while auth resolves — prevents flash of tabs before redirect */}
+      {onboarded === null && (
+        <View style={styles.overlay} />
+      )}
+
       <StatusBar style="auto" />
     </QueryClientProvider>
-  );
+  )
 }
+
+const styles = StyleSheet.create({
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: '#EDEAE3',
+  },
+})

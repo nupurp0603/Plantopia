@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import {
-  View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView,
+  View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, Platform,
 } from 'react-native'
 import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
@@ -129,6 +129,7 @@ export default function OnboardingScreen() {
   }
 
   return (
+    <View style={s.root}>
     <SafeAreaView style={s.container}>
 
       {/* ── Top bar ── */}
@@ -192,13 +193,19 @@ export default function OnboardingScreen() {
       </View>
 
     </SafeAreaView>
+    </View>
   )
 }
 
 // ── Styles ─────────────────────────────────────────────────────────────────────
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#EDEAE3' },
+  root: { flex: 1, backgroundColor: '#EDEAE3' },
+  container: {
+    flex: 1,
+    backgroundColor: '#EDEAE3',
+    paddingTop: Platform.OS === 'web' ? 48 : 0,
+  },
 
   // Top bar
   topBar: {
