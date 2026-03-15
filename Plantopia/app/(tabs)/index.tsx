@@ -131,6 +131,11 @@ const card = StyleSheet.create({
     paddingHorizontal: 16,
     marginBottom: 12,
     gap: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.12)',
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
   },
   image: {
     width: 56,
@@ -167,10 +172,17 @@ function WeatherCard() {
 
 const wx = StyleSheet.create({
   card: {
-    backgroundColor: '#D4E8F8',
+    backgroundColor: 'rgba(212,232,248,0.72)',
     borderRadius: 20,
     padding: 18,
     marginBottom: 24,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.70)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.07,
+    shadowRadius: 8,
+    elevation: 2,
   },
   row: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 10 },
   location: { fontSize: 13, color: '#4A6A8A', fontWeight: '500' },
@@ -217,13 +229,15 @@ const tips = StyleSheet.create({
   scroll: { gap: 12, paddingBottom: 4 },
   card: {
     width: 160,
-    backgroundColor: '#fff',
+    backgroundColor: 'rgba(255,255,255,0.70)',
     borderRadius: 18,
     padding: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.85)',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 6,
+    shadowOpacity: 0.07,
+    shadowRadius: 8,
     elevation: 2,
   },
   iconCircle: {
@@ -275,7 +289,7 @@ export default function GardenHomeScreen() {
 
           {/* ── Hero ── */}
           <ImageBackground
-            source={require('@/assets/images-new/garden-hero.png')}
+            source={require('@/assets/images/herobg.jpg')}
             style={s.hero}
             imageStyle={s.heroImg}
             resizeMode="cover"
@@ -381,13 +395,13 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     alignSelf: 'flex-start',
-    backgroundColor: '#D9C89A',
+    backgroundColor: '#A8D5A2',
     borderRadius: 24,
     paddingHorizontal: 18,
     paddingVertical: 10,
     gap: 6,
   },
-  addBtnTxt: { fontSize: 15, fontWeight: '700', color: '#2D4A2D' },
+  addBtnTxt: { fontSize: 15, fontWeight: '700', color: '#1A3A1A' },
 
   // Body
   body: { paddingHorizontal: 20, paddingTop: 24 },
@@ -409,15 +423,17 @@ const s = StyleSheet.create({
   // Empty state
   emptyCard: {
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: 'rgba(255,255,255,0.70)',
     borderRadius: 20,
     padding: 32,
     marginBottom: 20,
     gap: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.85)',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
+    shadowOpacity: 0.07,
+    shadowRadius: 8,
     elevation: 1,
   },
   emptyTitle: { fontSize: 16, fontWeight: '700', color: '#2D4A2D' },
@@ -427,12 +443,17 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#EDF4EC',
+    backgroundColor: 'rgba(255,255,255,0.70)',
     borderRadius: 18,
     padding: 14,
     marginBottom: 20,
     borderWidth: 1,
-    borderColor: 'rgba(45,74,45,0.12)',
+    borderColor: 'rgba(255,255,255,0.85)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.07,
+    shadowRadius: 8,
+    elevation: 2,
   },
   gardenBannerLeft: {
     flexDirection: 'row',
